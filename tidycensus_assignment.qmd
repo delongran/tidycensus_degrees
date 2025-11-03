@@ -9,9 +9,17 @@ format: html
 ```{r}
 library(tidyverse)
 library(tidycensus)
+library(tigris)
+library(sf)
+library(dplyr)
+library(ggplot2)
+library(ggrepel)
+library(scales)
 options(tigris_use_cache = TRUE)
 
 census_api_key("6cba154bc2b13dd1269b03f924d613b6b7c6cf11")
+#don't store in code in future
+#use Renviron file 
 
 acs23 <- load_variables(2023, "acs5", cache = TRUE)
 
@@ -24,6 +32,7 @@ acs23 <- acs23 %>%
 #Field of Bachelor's Degree for First Major for the Population 25 Years and Over
 bach_vars <- c(total = "C15010_001",
             engineer = "C15010_002",
+            engineer2 = "C15010_003", 
             business = "C15010_004", 
             education = "C15010_005", 
             arts = "C15010_006")
@@ -40,15 +49,15 @@ bach_type <- get_acs(
 bach_type_wide <- bach_type %>% 
   select(GEOID, NAME, geometry, variable, estimate) %>% 
   pivot_wider(names_from = variable, values_from = estimate) %>%  
-  mutate(eng_prop = engineer/total) 
+  mutate(eng_prop = ((engineer+engineer2)/total)) 
 
 bach_type_wide %>% 
     ggplot(aes(fill = eng_prop)) + 
     geom_sf(color = NA) + 
     theme_void() + 
     scale_fill_viridis_c(labels = scales::percent_format()) +
-    labs(title = "Proportion of Engineering Degrees", 
-         subtitle = "Age 25 and over")
+    labs(title = "Proportion of Science and Engineering Degrees", 
+         subtitle = "North Carolina, Age 25+")
 
 ```
 
@@ -86,12 +95,6 @@ cities <- places(state = c("NC"), cb = FALSE)
 triangle_cities <- cities %>%
   filter(NAME %in% c("Raleigh", "Durham", "Chapel Hill", "Cary", "Apex", "Morrisville"))
 
-library(tigris)
-library(sf)
-library(dplyr)
-library(ggplot2)
-library(ggrepel)
-library(scales)
 
 triangle_pts <- triangle_cities %>% st_centroid()
 
